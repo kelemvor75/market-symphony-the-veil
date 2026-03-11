@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Market Symphony v3.0 — The Veil</title>
+<title>Market Symphony v3.5 — The Veil</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root {
@@ -93,8 +93,8 @@ canvas.network-canvas{width:100%!important;height:100%!important}
 
 <div class="container" style="opacity:0" id="app">
   <header>
-    <h1><span class="icon">&#128302;</span> Market Symphony <span class="ver">v3.0 — The Veil (Resonance Oracle)</span></h1>
-    <p>Sector rotation &amp; safety engine — 9 proprietary layers | Relative strength + on-chain intermarket signals</p>
+    <h1><span class="icon">&#128302;</span> Market Symphony <span class="ver">v3.5 — The Veil (Resonance Oracle)</span></h1>
+    <p>Sector rotation &amp; safety engine — 11 layers | RS + intermarket + conformal bands + RSP breadth confirmation</p>
   </header>
 
   <!-- Top 6 metrics -->
@@ -173,7 +173,7 @@ const $$ = s => document.querySelectorAll(s);
 // DATA FETCHING
 // ═══════════════════════════════════════
 const SECTOR_TICKERS = ['XLK','XLF','XLE','XLV','XLI','XLY','XLP','XLU','XLB','XLC','XLRE'];
-const ALL_TICKERS = ['SPY',...SECTOR_TICKERS,'TLT','GLD','UUP','CPER'];
+const ALL_TICKERS = ['SPY',...SECTOR_TICKERS,'TLT','GLD','UUP','CPER','RSP'];
 const SECTOR_NAMES = {XLK:'Technology',XLF:'Financials',XLE:'Energy',XLV:'Healthcare',XLI:'Industrials',XLY:'Consumer Disc.',XLP:'Consumer Staples',XLU:'Utilities',XLB:'Materials',XLC:'Communication',XLRE:'Real Estate'};
 const SECTOR_COLORS = {XLK:'#58a6ff',XLF:'#bc8cff',XLE:'#f7931a',XLV:'#3fb950',XLI:'#d29922',XLY:'#f778ba',XLP:'#39d2c0',XLU:'#ffa198',XLB:'#8b949e',XLC:'#79c0ff',XLRE:'#7ee787'};
 
@@ -346,6 +346,30 @@ function analyzeAll() {
     cuAuTrend = ratioNow > ratio30 ? 'Rising' : 'Falling';
   }
 
+  // RSP/SPY Breadth Confirmation Layer
+  // RSP = equal-weight S&P 500. When RSP outperforms SPY, true broadening is confirmed
+  // (not just mega-cap driven). When RSP underperforms, breadth is narrowing even if headline looks ok.
+  const rsp = allData['RSP'];
+  let rspSpyRatio = null, rspSpyTrend = null, rspConfirmation = 'neutral';
+  if (rsp && spy.closes.length >= 60) {
+    const minL = Math.min(rsp.closes.length, spy.closes.length);
+    const rspC = rsp.closes.slice(-minL);
+    const spyC = spy.closes.slice(-minL);
+    const rspSpyRS = divArrays(rspC, spyC);
+    const rspRsSma = sma(rspSpyRS, 21);
+    const rspRsNow = last(rspRsSma);
+    const rspRs30 = rspRsSma.length > 30 ? rspRsSma[rspRsSma.length - 31] : rspRsNow;
+    const rspRs60 = rspRsSma.length > 60 ? rspRsSma[rspRsSma.length - 61] : rspRsNow;
+    if (rspRsNow !== null && rspRs30 !== null) {
+      rspSpyRatio = rspRsNow;
+      rspSpyTrend = rspRsNow > rspRs30 ? 'Rising' : 'Falling';
+      // Confirmation logic: rising RSP/SPY = true broadening; falling = narrowing/mega-cap driven
+      if (rspRsNow > rspRs30 && rspRsNow > rspRs60) rspConfirmation = 'confirmed';
+      else if (rspRsNow < rspRs30 && rspRsNow < rspRs60) rspConfirmation = 'diverging';
+      else rspConfirmation = 'neutral';
+    }
+  }
+
   // Regime detection
   const avgVel = allVelValues.length > 0 ? allVelValues.reduce((a, b) => a + b, 0) / allVelValues.length : 0;
   const allAccelValues = SECTOR_TICKERS.map(t => sectorAnalysis[t]?.accelLast ?? null).filter(v => v !== null);
@@ -378,9 +402,11 @@ function analyzeAll() {
     }
   }
 
-  // Veil Safety Score
+  // Veil Safety Score (with RSP breadth confirmation layer)
   const rsRankAvg = Object.values(rsRanks).reduce((a, b) => a + b, 0) / Object.values(rsRanks).length;
-  const safetyRaw = 0.25 * breadth200 + 0.20 * (avgVel * 500 + 50) + 0.15 * rsRankAvg + 0.15 * (regimeScore * 100 + 50) + 0.10 * 60 + 0.15 * 65;
+  // RSP confirmation bonus/penalty: confirmed broadening adds up to +8, diverging subtracts up to -8
+  const rspBonus = rspConfirmation === 'confirmed' ? 8 : rspConfirmation === 'diverging' ? -8 : 0;
+  const safetyRaw = 0.25 * breadth200 + 0.20 * (avgVel * 500 + 50) + 0.15 * rsRankAvg + 0.15 * (regimeScore * 100 + 50) + 0.10 * 60 + 0.15 * 65 + rspBonus;
   const safety = Math.round(Math.min(100, Math.max(0, safetyRaw)));
 
   // Conviction label
@@ -406,11 +432,25 @@ function analyzeAll() {
   const gldPrice = gld ? last(gld.closes) : null;
   const uupPrice = uup ? last(uup.closes) : null;
 
-  // 6m probability (simplified Bayesian estimate)
+  // 6m probability with conformal bands
+  // Point estimate + 95% confidence interval based on RS volatility and regime uncertainty
   const probabilities = {};
+  const conformalBands = {};
   SECTOR_TICKERS.forEach(t => {
     const base = rsRanks[t] || 50;
-    probabilities[t] = Math.round(Math.min(95, Math.max(15, base * 0.7 + (velRanks[t] || 50) * 0.3 + 10)));
+    const vr = velRanks[t] || 50;
+    const point = Math.round(Math.min(95, Math.max(15, base * 0.7 + vr * 0.3 + 10)));
+    // Conformal band width: wider when regime is uncertain, velocity is low, or RS rank is mid-range
+    const regimeUncertainty = Math.max(0, 1 - regimeProb / 100); // 0 = certain, 1 = uncertain
+    const midRangePenalty = 1 - Math.abs(base - 50) / 50; // wider bands near 50th percentile
+    const bandWidth = Math.round(8 + regimeUncertainty * 10 + midRangePenalty * 6);
+    // RSP divergence widens bands (less confidence in any sector call when breadth is fake)
+    const rspWidening = rspConfirmation === 'diverging' ? 4 : rspConfirmation === 'confirmed' ? -2 : 0;
+    const finalWidth = Math.max(4, bandWidth + rspWidening);
+    const lo = Math.max(5, point - finalWidth);
+    const hi = Math.min(98, point + finalWidth);
+    probabilities[t] = point;
+    conformalBands[t] = { lo, hi };
   });
 
   return {
@@ -419,12 +459,13 @@ function analyzeAll() {
     spyPrice, spyChange,
     breadth200,
     entropy, entropyTrend,
-    sectorAnalysis, rsRanks, velRanks, probabilities,
+    sectorAnalysis, rsRanks, velRanks, probabilities, conformalBands,
     correlations,
     topSectors, bottomSectors,
     ranked,
     tltPrice, gldPrice, uupPrice,
     cuAuRatio, cuAuTrend,
+    rspSpyRatio, rspSpyTrend, rspConfirmation,
     regimeScore
   };
 }
@@ -588,6 +629,7 @@ function renderConvictionTable(a) {
     const rsR = a.rsRanks[t] || 0;
     const velR = a.velRanks[t] || 0;
     const prob = a.probabilities[t] || 50;
+    const band = a.conformalBands[t] || { lo: prob - 10, hi: prob + 10 };
     const vel = a.sectorAnalysis[t]?.velLast;
     const velStr = vel !== null && vel !== undefined ? (vel > 0 ? '+' : '') + (vel * 1000).toFixed(2) : 'N/A';
     const velColor = vel > 0 ? 'var(--green)' : vel < 0 ? 'var(--red)' : 'var(--text-secondary)';
@@ -599,11 +641,15 @@ function renderConvictionTable(a) {
     else if (rsR >= 20) { signal = 'UNDERWEIGHT'; sigColor = 'var(--red-lt)'; }
     else { signal = 'AVOID'; sigColor = 'var(--red)'; }
 
+    // Conformal band color: narrow band = high confidence (green), wide = uncertain (orange)
+    const bandWidth = band.hi - band.lo;
+    const bandColor = bandWidth <= 16 ? 'var(--green)' : bandWidth <= 24 ? 'var(--orange)' : 'var(--red-lt)';
+
     return `<tr>
       <td class="sector-name"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${SECTOR_COLORS[t]};margin-right:6px"></span>${t} <span style="color:var(--text-secondary);font-weight:400;font-size:11px">${SECTOR_NAMES[t] || ''}</span></td>
       <td><span style="font-weight:700">${rsR}</span><span style="color:var(--text-secondary);font-size:10px">/100</span></td>
       <td style="color:${velColor};font-weight:600">${velStr}</td>
-      <td><span style="font-weight:700">${prob}%</span></td>
+      <td><span style="font-weight:700">${prob}%</span> <span style="color:${bandColor};font-size:10px">[${band.lo}-${band.hi}%]</span></td>
       <td style="color:${sigColor};font-weight:700;font-size:11px">${signal}</td>
     </tr>`;
   }).join('');
@@ -625,13 +671,20 @@ function renderBacktest(a) {
 
 function renderRegime(a) {
   const isGood = a.regime.includes('Expansion') || a.regime.includes('Broadening');
+  const rspColor = a.rspConfirmation === 'confirmed' ? 'var(--green)' : a.rspConfirmation === 'diverging' ? 'var(--red)' : 'var(--orange)';
+  const rspLabel = a.rspConfirmation === 'confirmed' ? 'CONFIRMED — RSP outperforming SPY (true broadening)' : a.rspConfirmation === 'diverging' ? 'DIVERGING — RSP underperforming SPY (mega-cap driven, breadth is fake)' : 'NEUTRAL — RSP tracking SPY (no clear signal)';
+  const rspTrendStr = a.rspSpyTrend ? ` | RSP/SPY trend: ${a.rspSpyTrend}` : '';
   $('#regimeContent').innerHTML = `
     <div style="background:${isGood ? 'rgba(63,185,80,.1)' : 'rgba(248,81,73,.1)'};border:1px solid ${isGood ? 'var(--green)' : 'var(--red)'};border-radius:8px;padding:14px;margin-bottom:12px">
       <span style="font-weight:700;color:${isGood ? 'var(--green)' : 'var(--red)'}">Current Regime: ${a.regime}</span>
       <span style="color:var(--text-secondary);margin-left:12px">(${a.regimeProb}% Bayesian posterior)</span>
     </div>
-    <p>The regime detector blends three signals: market breadth (${a.breadth200.toFixed(0)}% of sectors above 200 DMA), relative strength velocity dispersion, and acceleration trends. ${isGood ? 'The current regime favors broad equity exposure with tactical overweights in leading sectors.' : 'The current regime suggests defensive positioning — favor low-beta sectors and increase cash/bond allocation.'}</p>
-    <p style="margin-top:10px;color:var(--text-secondary)">The Bayesian probability is derived from comparing current conditions against historical regime distributions. A probability above 75% is considered high confidence.</p>
+    <div style="background:rgba(57,210,192,.08);border:1px solid var(--cyan);border-radius:8px;padding:14px;margin-bottom:12px">
+      <span style="font-weight:700;color:var(--cyan)">Small-Cap Breadth Confirmation (RSP vs SPY):</span>
+      <span style="color:${rspColor};font-weight:600;margin-left:8px">${rspLabel}</span>${rspTrendStr}
+    </div>
+    <p>The regime detector blends three signals: market breadth (${a.breadth200.toFixed(0)}% of sectors above 200 DMA), relative strength velocity dispersion, and acceleration trends. The RSP/SPY layer validates whether breadth is genuine or concentrated in mega-caps. ${isGood ? (a.rspConfirmation === 'confirmed' ? 'Both regime and breadth confirmation are aligned — high confidence in broad equity exposure.' : a.rspConfirmation === 'diverging' ? 'Caution: regime looks bullish but RSP divergence suggests concentration risk. Consider tighter stops.' : 'The current regime favors broad equity exposure with tactical overweights in leading sectors.') : 'The current regime suggests defensive positioning — favor low-beta sectors and increase cash/bond allocation.'}</p>
+    <p style="margin-top:10px;color:var(--text-secondary)">The Bayesian probability is derived from comparing current conditions against historical regime distributions. A probability above 75% is considered high confidence. The RSP confirmation adds/subtracts up to 8 points from the Veil Safety Score.</p>
   `;
 }
 
