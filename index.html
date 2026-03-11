@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Market Symphony v4.0 — The Veil Enhanced</title>
+<title>Market Symphony v4.5 — The Veil Enhanced</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root {
@@ -129,6 +129,43 @@ header p{color:var(--text-secondary);font-size:12px}
 .what-to-do{margin-top:12px;padding:14px;background:var(--bg-tertiary);border-radius:8px;border-left:3px solid var(--cyan);font-size:12px;line-height:1.7}
 .what-to-do strong{color:var(--cyan)}
 
+/* Daily Briefing */
+.briefing-panel{background:linear-gradient(135deg, rgba(57,210,192,.06), rgba(188,140,255,.06));border:1px solid var(--cyan);border-radius:12px;padding:20px;margin-bottom:20px;position:relative}
+.briefing-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.briefing-title{font-size:16px;font-weight:700;color:var(--cyan)}
+.briefing-date{font-size:11px;color:var(--text-secondary)}
+.briefing-summary{font-size:13px;line-height:1.8;color:var(--text-primary)}
+.briefing-summary .highlight{font-weight:700}
+.briefing-summary .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;margin:0 2px}
+.briefing-summary .tag-green{background:rgba(63,185,80,.15);color:var(--green);border:1px solid var(--green)}
+.briefing-summary .tag-red{background:rgba(248,81,73,.15);color:var(--red);border:1px solid var(--red)}
+.briefing-summary .tag-orange{background:rgba(210,153,34,.15);color:var(--orange);border:1px solid var(--orange)}
+.briefing-summary .tag-purple{background:rgba(188,140,255,.15);color:var(--purple);border:1px solid var(--purple)}
+.briefing-bullets{margin-top:12px;padding-left:0;list-style:none}
+.briefing-bullets li{padding:6px 0;font-size:12px;line-height:1.6;border-bottom:1px solid rgba(48,54,61,.5)}
+.briefing-bullets li:last-child{border-bottom:none}
+.briefing-bullets li::before{content:'→ ';color:var(--cyan);font-weight:700}
+.copy-btn{background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-secondary);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;transition:all .15s}
+.copy-btn:hover{background:var(--cyan);color:#000;border-color:var(--cyan)}
+.copy-btn.copied{background:var(--green);color:#000;border-color:var(--green)}
+
+/* Alerts */
+.alerts-strip{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.alert-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid}
+.alert-chip.alert-up{background:rgba(63,185,80,.1);border-color:var(--green);color:var(--green)}
+.alert-chip.alert-down{background:rgba(248,81,73,.1);border-color:var(--red);color:var(--red)}
+.alert-chip.alert-warn{background:rgba(210,153,34,.1);border-color:var(--orange);color:var(--orange)}
+
+/* Momentum arrows */
+.momentum-arrow{font-size:14px;margin-left:4px}
+.momentum-arrow.up{color:var(--green)}
+.momentum-arrow.down{color:var(--red)}
+.momentum-arrow.flat{color:var(--text-secondary)}
+
+/* Safety sparkline */
+.sparkline-wrap{display:inline-block;vertical-align:middle;margin-left:6px}
+.sparkline-wrap canvas{vertical-align:middle}
+
 @media(max-width:1200px){.intermarket-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:1000px){.metrics-row{grid-template-columns:repeat(3,1fr)}.two-col{grid-template-columns:1fr}}
 @media(max-width:600px){.metrics-row{grid-template-columns:repeat(2,1fr)}.intermarket-grid{grid-template-columns:1fr}}
@@ -143,9 +180,25 @@ header p{color:var(--text-secondary);font-size:12px}
 
 <div class="container" style="opacity:0" id="app">
   <header>
-    <h1><span class="icon">&#128302;</span> Market Symphony <span class="ver">v4.0 — The Veil Enhanced</span></h1>
-    <p>Sector rotation &amp; safety engine — 11 layers | Correlation heatmap, regime playbook, intermarket cards, fracture metrics</p>
+    <h1><span class="icon">&#128302;</span> Market Symphony <span class="ver">v4.5 — The Veil Enhanced</span></h1>
+    <p>Sector rotation &amp; safety engine — 11 layers | Correlation heatmap, regime playbook, intermarket cards, fracture metrics, daily briefing, momentum arrows, change alerts</p>
   </header>
+
+  <!-- Change Alerts -->
+  <div class="alerts-strip" id="alertsStrip"></div>
+
+  <!-- Daily Briefing -->
+  <div class="briefing-panel card" id="briefingPanel" style="display:none">
+    <div class="briefing-header">
+      <div class="briefing-title">📋 Daily Briefing</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="briefing-date" id="briefingDate"></span>
+        <button class="copy-btn" id="copyBriefingBtn" title="Copy briefing to clipboard">📋 Copy Briefing</button>
+      </div>
+    </div>
+    <div class="briefing-summary" id="briefingSummary"></div>
+    <ul class="briefing-bullets" id="briefingBullets"></ul>
+  </div>
 
   <!-- Top 6 metrics -->
   <div class="metrics-row" id="metricsRow">
@@ -157,7 +210,7 @@ header p{color:var(--text-secondary);font-size:12px}
           <span class="tooltip">Master ensemble score (0-100) blending 6 layers. Above 65 = bullish, below 45 = defensive.</span>
         </span>
       </div>
-      <div class="m-value" id="mSafety">--</div>
+      <div class="m-value" id="mSafety">--<span class="sparkline-wrap"><canvas id="safetySparkline" width="80" height="24"></canvas></span></div>
       <div class="m-sub" id="mSafetySub">Loading...</div>
     </div>
     <div class="card metric-card">
@@ -242,7 +295,7 @@ header p{color:var(--text-secondary);font-size:12px}
           <span class="tooltip">Ranked sectors by relative strength and velocity. 6m Prob = forward 6-month outperformance probability.</span>
         </span>
       </div>
-      <div style="overflow-x:auto"><table class="conv-table" id="convTable"><thead><tr><th>Sector</th><th>RS Rank</th><th>Velocity</th><th>6m Prob</th><th>Signal</th></tr></thead><tbody></tbody></table></div>
+      <div style="overflow-x:auto"><table class="conv-table" id="convTable"><thead><tr><th>Sector</th><th>RS Rank</th><th>Mom.</th><th>Velocity</th><th>6m Prob</th><th>Signal</th></tr></thead><tbody></tbody></table></div>
     </div>
   </div>
 
@@ -636,6 +689,253 @@ function analyzeAll() {
 }
 
 // ═══════════════════════════════════════
+// SAFETY SCORE HISTORY (simulated 20-day)
+// ═══════════════════════════════════════
+function computeSafetyHistory(analysis) {
+  // Simulate 20-day safety score history using available price data
+  const spy = allData['SPY'];
+  if (!spy || spy.closes.length < 230) return [];
+  const history = [];
+  for (let offset = 19; offset >= 0; offset--) {
+    const idx = spy.closes.length - 1 - offset;
+    if (idx < 200) { history.push(analysis.safety); continue; }
+    // Approximate breadth at this historical point
+    let aboveCount = 0, totalCount = 0;
+    SECTOR_TICKERS.forEach(ticker => {
+      const sec = allData[ticker];
+      if (!sec || sec.closes.length <= idx) return;
+      const closes = sec.closes;
+      // Compute 200-day MA at this point
+      if (idx < 200) return;
+      let sum = 0;
+      for (let k = idx - 199; k <= idx; k++) sum += closes[k];
+      const ma200 = sum / 200;
+      totalCount++;
+      if (closes[idx] > ma200) aboveCount++;
+    });
+    const histBreadth = totalCount > 0 ? (aboveCount / totalCount) * 100 : 50;
+    // Approximate velocity at this point
+    let velSum = 0, velCount = 0;
+    SECTOR_TICKERS.forEach(ticker => {
+      const sec = allData[ticker];
+      if (!sec || sec.closes.length <= idx || idx < 136) return;
+      const spyC = spy.closes;
+      const secC = sec.closes;
+      // RS at this point and 10 days prior
+      const rs1 = secC[idx] / spyC[idx];
+      const rs2 = secC[idx - 10] / spyC[idx - 10];
+      velSum += rs1 - rs2;
+      velCount++;
+    });
+    const avgVelH = velCount > 0 ? velSum / velCount : 0;
+    const histSafety = Math.round(Math.min(100, Math.max(0, 0.25 * histBreadth + 0.20 * (avgVelH * 500 + 50) + 0.15 * 50 + 0.15 * 55 + 0.10 * 60 + 0.15 * 65)));
+    history.push(histSafety);
+  }
+  return history;
+}
+
+function renderSafetySparkline(history, currentColor) {
+  const canvas = document.getElementById('safetySparkline');
+  if (!canvas || history.length < 2) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  const min = Math.min(...history) - 5;
+  const max = Math.max(...history) + 5;
+  const range = max - min || 1;
+  const stepX = w / (history.length - 1);
+  // Draw line
+  ctx.beginPath();
+  ctx.strokeStyle = currentColor;
+  ctx.lineWidth = 1.5;
+  history.forEach((v, i) => {
+    const x = i * stepX;
+    const y = h - ((v - min) / range) * h;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  // Dot at end
+  const lastX = (history.length - 1) * stepX;
+  const lastY = h - ((history[history.length - 1] - min) / range) * h;
+  ctx.beginPath();
+  ctx.arc(lastX, lastY, 2, 0, Math.PI * 2);
+  ctx.fillStyle = currentColor;
+  ctx.fill();
+}
+
+// ═══════════════════════════════════════
+// CHANGE DETECTION & ALERTS
+// ═══════════════════════════════════════
+function computeAlerts(analysis) {
+  const alerts = [];
+
+  // Safety score level alerts
+  if (analysis.safety >= 80) alerts.push({ type: 'up', text: `Safety Score at ${analysis.safety} — Extreme Conviction zone` });
+  else if (analysis.safety < 35) alerts.push({ type: 'down', text: `Safety Score at ${analysis.safety} — Defensive Mode triggered` });
+
+  // Breadth alerts
+  if (analysis.breadth200 >= 82) alerts.push({ type: 'up', text: `Breadth at ${analysis.breadth200.toFixed(0)}% — exceptionally strong` });
+  else if (analysis.breadth200 < 36) alerts.push({ type: 'down', text: `Breadth at ${analysis.breadth200.toFixed(0)}% — severe narrowing` });
+
+  // RSP divergence alert
+  if (analysis.rspConfirmation === 'diverging') alerts.push({ type: 'warn', text: 'RSP diverging from SPY — breadth may be fake (mega-cap driven)' });
+
+  // Big movers: sectors that jumped significantly in rank
+  // Approximate by checking velocity extremes
+  const sortedByVel = [...SECTOR_TICKERS].sort((a, b) => (analysis.sectorAnalysis[b]?.velLast || 0) - (analysis.sectorAnalysis[a]?.velLast || 0));
+  const topMover = sortedByVel[0];
+  const bottomMover = sortedByVel[sortedByVel.length - 1];
+  const topVel = analysis.sectorAnalysis[topMover]?.velLast || 0;
+  const bottomVel = analysis.sectorAnalysis[bottomMover]?.velLast || 0;
+  if (topVel > 0.002) alerts.push({ type: 'up', text: `${topMover} (${SECTOR_NAMES[topMover]}) surging — fastest RS velocity` });
+  if (bottomVel < -0.002) alerts.push({ type: 'down', text: `${bottomMover} (${SECTOR_NAMES[bottomMover]}) sinking — weakest RS velocity` });
+
+  // Intermarket alerts
+  if (analysis.tlt30d !== null && Math.abs(analysis.tlt30d) > 4) {
+    alerts.push({ type: analysis.tlt30d > 0 ? 'warn' : 'down', text: `TLT moved ${analysis.tlt30d > 0 ? '+' : ''}${analysis.tlt30d.toFixed(1)}% in 30 days — significant bond shift` });
+  }
+  if (analysis.gld30d !== null && analysis.gld30d > 5) {
+    alerts.push({ type: 'warn', text: `Gold up ${analysis.gld30d.toFixed(1)}% in 30 days — fear premium building` });
+  }
+
+  // Correlation density alert
+  if (analysis.correlationDensity > 55) alerts.push({ type: 'warn', text: `Correlation density at ${analysis.correlationDensity.toFixed(0)}% — diversification severely limited` });
+
+  return alerts;
+}
+
+function renderAlerts(alerts) {
+  const strip = document.getElementById('alertsStrip');
+  if (!alerts.length) { strip.style.display = 'none'; return; }
+  strip.style.display = 'flex';
+  strip.innerHTML = alerts.map(a => {
+    const cls = a.type === 'up' ? 'alert-up' : a.type === 'down' ? 'alert-down' : 'alert-warn';
+    const icon = a.type === 'up' ? '🔺' : a.type === 'down' ? '🔻' : '⚠️';
+    return `<div class="alert-chip ${cls}">${icon} ${a.text}</div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+// DAILY BRIEFING GENERATOR
+// ═══════════════════════════════════════
+function generateBriefing(analysis) {
+  const a = analysis;
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  document.getElementById('briefingDate').textContent = today;
+
+  // Regime tag
+  const regimeColor = a.regime.includes('Expansion') || a.regime.includes('Broadening') ? 'green' : a.regime.includes('Defensive') ? 'red' : 'orange';
+  const regimeTag = `<span class="tag tag-${regimeColor}">${a.regime}</span>`;
+
+  // Safety tag
+  const safetyTagColor = a.safety >= 65 ? 'green' : a.safety >= 45 ? 'orange' : 'red';
+  const safetyTag = `<span class="tag tag-${safetyTagColor}">${a.safety}/100 ${a.safetyLabel}</span>`;
+
+  // Fracture severity
+  const velStd = a.velocityStdDev;
+  const entropyScore = a.entropy === 'Healthy' ? 75 : a.entropy === 'Moderate' ? 50 : 25;
+  const corrScore = 100 - a.correlationDensity;
+  const fractureAvg = (a.breadth200 + entropyScore + (velStd > 0.003 ? 75 : velStd > 0.0015 ? 50 : 25) + corrScore) / 4;
+  let fractureSeverity = 'Clear', fractureColor = 'green';
+  if (fractureAvg < 40) { fractureSeverity = 'Severe'; fractureColor = 'red'; }
+  else if (fractureAvg < 60) { fractureSeverity = 'Moderate'; fractureColor = 'orange'; }
+  else if (fractureAvg < 75) { fractureSeverity = 'Mild'; fractureColor = 'orange'; }
+  const fractureTag = `<span class="tag tag-${fractureColor}">Fracture: ${fractureSeverity}</span>`;
+
+  // RSP tag
+  const rspTag = a.rspConfirmation === 'confirmed' ? '<span class="tag tag-green">Breadth Confirmed</span>' : a.rspConfirmation === 'diverging' ? '<span class="tag tag-red">Breadth Diverging</span>' : '<span class="tag tag-orange">Breadth Neutral</span>';
+
+  // Intermarket alignment
+  const tltBadge = a.tlt30d !== null && a.tlt30d < -2 ? 'RISK-OFF' : a.tlt30d !== null && a.tlt30d > 2 ? 'RISK-ON' : 'NEUTRAL';
+  const gldBadge = a.gld30d !== null && a.gld30d > 3 ? 'RISK-OFF' : a.gld30d !== null && a.gld30d < -2 ? 'RISK-ON' : 'NEUTRAL';
+  const uupBadge = a.uup30d !== null && a.uup30d > 2 ? 'RISK-OFF' : a.uup30d !== null && a.uup30d < -1 ? 'RISK-ON' : 'NEUTRAL';
+  const cperGldBadge = a.cuAuTrend === 'Rising' ? 'RISK-ON' : a.cuAuTrend === 'Falling' ? 'RISK-OFF' : 'NEUTRAL';
+  const badges = [tltBadge, gldBadge, uupBadge, cperGldBadge];
+  const riskOnCount = badges.filter(b => b === 'RISK-ON').length;
+  const riskOffCount = badges.filter(b => b === 'RISK-OFF').length;
+  const imTag = riskOnCount >= 3 ? '<span class="tag tag-green">Intermarket: Bullish</span>' : riskOffCount >= 3 ? '<span class="tag tag-red">Intermarket: Risk-Off</span>' : '<span class="tag tag-orange">Intermarket: Mixed</span>';
+
+  // Top line summary
+  const summaryLine = `${regimeTag} ${safetyTag} ${fractureTag} ${rspTag} ${imTag}`;
+  document.getElementById('briefingSummary').innerHTML = summaryLine;
+
+  // Bullet points
+  const bullets = [];
+
+  // 1. Overall stance
+  let stance = '';
+  if (a.safety >= 80) stance = '<span class="highlight" style="color:var(--green)">Aggressive positioning.</span> Safety score in Extreme Conviction territory. Maximize equity exposure in confirmed leaders.';
+  else if (a.safety >= 65) stance = '<span class="highlight" style="color:var(--green-lt)">Bullish lean.</span> High conviction supports overweighting top sectors with moderate position sizing.';
+  else if (a.safety >= 45) stance = '<span class="highlight" style="color:var(--orange)">Neutral / selective.</span> Mixed signals warrant careful stock-picking. Avoid outsized bets.';
+  else if (a.safety >= 30) stance = '<span class="highlight" style="color:var(--red-lt)">Cautious.</span> Reduce equity exposure and tighten stops. Favor defensive sectors.';
+  else stance = '<span class="highlight" style="color:var(--red)">Defensive mode.</span> Raise cash significantly. Prioritize capital preservation over returns.';
+  bullets.push(stance);
+
+  // 2. Top picks + diversification warning
+  const top3 = a.topSectors.slice(0, 3);
+  const top3Str = top3.map(t => `<strong style="color:${SECTOR_COLORS[t]}">${t}</strong> (${SECTOR_NAMES[t]})`).join(', ');
+  let divWarning = '';
+  // Check if top 3 are highly correlated
+  for (let i = 0; i < top3.length; i++) {
+    for (let j = i + 1; j < top3.length; j++) {
+      const key = `${top3[i]}_${top3[j]}`;
+      const c = a.corrMatrix[key] || 0;
+      if (c > 0.75) divWarning = ` ⚠️ <span style="color:var(--orange)">${top3[i]} and ${top3[j]} are highly correlated (${c.toFixed(2)}) — consider swapping one.</span>`;
+    }
+  }
+  bullets.push(`<span class="highlight">Top conviction picks:</span> ${top3Str}.${divWarning}`);
+
+  // 3. Allocation guidance
+  let equityPct = '70-80%';
+  if (a.safety >= 80) equityPct = '85-95%';
+  else if (a.safety >= 65) equityPct = '70-80%';
+  else if (a.safety >= 45) equityPct = '55-65%';
+  else equityPct = '35-50%';
+  const avoidStr = a.bottomSectors.map(t => `${t}`).join(', ');
+  bullets.push(`<span class="highlight">Suggested allocation:</span> ${equityPct} equities. Overweight top 3 sectors. Underweight/avoid: ${avoidStr}.`);
+
+  // 4. Key risk / watch item
+  let watchItem = '';
+  if (a.rspConfirmation === 'diverging') watchItem = 'RSP is underperforming SPY — this rally may be driven by mega-caps only. Watch for breadth to confirm or break down.';
+  else if (fractureAvg < 50) watchItem = `Fracture radar shows ${fractureSeverity.toLowerCase()} stress. Market structure is weakening — tighten stops and reduce laggard exposure.`;
+  else if (a.gld30d !== null && a.gld30d > 4) watchItem = `Gold is up ${a.gld30d.toFixed(1)}% over 30 days — fear premium is building. Watch for regime shift to defensive.`;
+  else if (a.correlationDensity > 45) watchItem = `Correlation density at ${a.correlationDensity.toFixed(0)}% — sectors are moving together, which limits diversification benefits.`;
+  else if (riskOffCount >= 2) watchItem = 'Multiple intermarket signals are risk-off. Bonds and/or gold suggesting caution even if equities look strong.';
+  else watchItem = 'No major red flags detected. Current conditions support the active regime. Continue monitoring breadth and intermarket for early warning signs.';
+  bullets.push(`<span class="highlight">Key watch:</span> ${watchItem}`);
+
+  // 5. Copper/Gold insight
+  if (a.cuAuRatio !== null) {
+    const cuAuInsight = a.cuAuTrend === 'Rising' ? 'Copper/Gold ratio rising — economic optimism supports cyclical overweight.' : 'Copper/Gold ratio falling — economic pessimism favoring defensive positioning.';
+    bullets.push(`<span class="highlight">Macro signal:</span> ${cuAuInsight}`);
+  }
+
+  document.getElementById('briefingBullets').innerHTML = bullets.map(b => `<li>${b}</li>`).join('');
+  document.getElementById('briefingPanel').style.display = 'block';
+
+  // Store plain text version for copy
+  const plainBullets = bullets.map(b => '→ ' + b.replace(/<[^>]*>/g, '')).join('\n');
+  const tagText = `${a.regime} | Safety: ${a.safety}/100 ${a.safetyLabel} | Fracture: ${fractureSeverity} | Breadth: ${a.rspConfirmation} | Intermarket: ${riskOnCount}/${4} Risk-On`;
+  window._briefingText = `MARKET SYMPHONY DAILY BRIEFING — ${today}\n${tagText}\n\n${plainBullets}\n\nGenerated by Market Symphony v4.5 — The Veil Enhanced`;
+}
+
+// ═══════════════════════════════════════
+// MOMENTUM ARROWS
+// ═══════════════════════════════════════
+function getMomentumArrow(ticker, analysis) {
+  const sa = analysis.sectorAnalysis[ticker];
+  if (!sa || !sa.vel || sa.vel.length < 15) return { arrow: '—', cls: 'flat', title: 'No data' };
+  // Compare velocity now vs 5 days ago
+  const velNow = sa.vel[sa.vel.length - 1];
+  const vel5 = sa.vel[sa.vel.length - 6];
+  if (velNow === null || vel5 === null) return { arrow: '—', cls: 'flat', title: 'Insufficient data' };
+  const delta = velNow - vel5;
+  if (delta > 0.0003) return { arrow: '⬆', cls: 'up', title: 'Accelerating (rank improving)' };
+  if (delta < -0.0003) return { arrow: '⬇', cls: 'down', title: 'Decelerating (rank falling)' };
+  return { arrow: '→', cls: 'flat', title: 'Stable momentum' };
+}
+
+// ═══════════════════════════════════════
 // RENDERING FUNCTIONS
 // ═══════════════════════════════════════
 function renderMetrics(a) {
@@ -673,6 +973,13 @@ function renderMetrics(a) {
   $('#mEntropy').style.color = a.entropy === 'Healthy' ? 'var(--green)' : a.entropy === 'Moderate' ? 'var(--orange)' : 'var(--red)';
   $('#mEntropySub').textContent = a.entropyTrend;
   $('#mEntropySub').style.color = a.entropyTrend === 'Rising' ? 'var(--green)' : 'var(--red)';
+
+  // Draw safety sparkline
+  const safetyHistory = computeSafetyHistory(a);
+  if (safetyHistory.length > 0) {
+    const sparkColor = getComputedStyle(document.documentElement).getPropertyValue(a.safetyColor.replace('var(', '').replace(')', '')).trim() || a.safetyColor;
+    renderSafetySparkline(safetyHistory, a.safetyColor.startsWith('var(') ? (a.safety >= 65 ? '#3fb950' : a.safety >= 45 ? '#8b949e' : '#f85149') : a.safetyColor);
+  }
 }
 
 function renderHeatmap(a) {
@@ -789,6 +1096,7 @@ function renderConvictionTable(a) {
     const vel = a.sectorAnalysis[t]?.velLast;
     const velStr = vel !== null && vel !== undefined ? (vel > 0 ? '+' : '') + (vel * 1000).toFixed(2) : 'N/A';
     const velColor = vel > 0 ? 'var(--green)' : vel < 0 ? 'var(--red)' : 'var(--text-secondary)';
+    const mom = getMomentumArrow(t, a);
 
     let signal, sigColor;
     if (rsR >= 80 && velR >= 60) { signal = 'STRONG BUY'; sigColor = 'var(--green)'; }
@@ -803,6 +1111,7 @@ function renderConvictionTable(a) {
     return `<tr>
       <td class="sector-name"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${SECTOR_COLORS[t]};margin-right:6px"></span>${t} <span style="color:var(--text-secondary);font-weight:400;font-size:11px">${SECTOR_NAMES[t] || ''}</span></td>
       <td><span style="font-weight:700">${rsR}</span><span style="color:var(--text-secondary);font-size:10px">/100</span></td>
+      <td><span class="momentum-arrow ${mom.cls}" title="${mom.title}">${mom.arrow}</span></td>
       <td style="color:${velColor};font-weight:600">${velStr}</td>
       <td><span style="font-weight:700">${prob}%</span> <span style="color:${bandColor};font-size:10px">[${band.lo}-${band.hi}%]</span></td>
       <td style="color:${sigColor};font-weight:700;font-size:11px">${signal}</td>
@@ -1142,7 +1451,34 @@ async function init() {
     renderIntermarket(analysis);
     renderFracture(analysis);
     renderAllocation(analysis);
+
+    const alerts = computeAlerts(analysis);
+    renderAlerts(alerts);
+    generateBriefing(analysis);
+
     setupTabs();
+
+    // Copy briefing button
+    document.getElementById('copyBriefingBtn').addEventListener('click', function() {
+      if (window._briefingText) {
+        navigator.clipboard.writeText(window._briefingText).then(() => {
+          this.textContent = '✅ Copied!';
+          this.classList.add('copied');
+          setTimeout(() => { this.textContent = '📋 Copy Briefing'; this.classList.remove('copied'); }, 2000);
+        }).catch(() => {
+          // Fallback
+          const ta = document.createElement('textarea');
+          ta.value = window._briefingText;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          this.textContent = '✅ Copied!';
+          this.classList.add('copied');
+          setTimeout(() => { this.textContent = '📋 Copy Briefing'; this.classList.remove('copied'); }, 2000);
+        });
+      }
+    });
 
     $$('#rsTfBtns .tf-btn').forEach(btn => {
       btn.addEventListener('click', () => {
