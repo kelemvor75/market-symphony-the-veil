@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Market Symphony v3.5 — The Veil</title>
+<title>Market Symphony v4.0 — The Veil Enhanced</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root {
@@ -24,17 +24,63 @@ header p{color:var(--text-secondary);font-size:12px}
 .card{background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:16px}
 
 .metrics-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
-.metric-card{text-align:center;padding:14px 8px}
+.metric-card{text-align:center;padding:14px 8px;position:relative}
 .metric-card .m-label{font-size:10px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px}
 .metric-card .m-value{font-size:24px;font-weight:700}
 .metric-card .m-sub{font-size:11px;font-weight:600;margin-top:2px}
 
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-.section-title{font-size:15px;font-weight:700;margin-bottom:10px}
+.section-title{font-size:15px;font-weight:700;margin-bottom:10px;position:relative;display:inline-block}
+.info-icon{display:inline-block;width:16px;height:16px;line-height:16px;text-align:center;border-radius:50%;border:1px solid var(--text-secondary);color:var(--text-secondary);font-size:10px;font-weight:700;margin-left:6px;cursor:help;position:relative}
+.tooltip-wrapper{position:relative;display:inline-block}
+.tooltip-wrapper .tooltip{position:absolute;bottom:125%;left:50%;transform:translateX(-50%);background:#000;color:#fff;padding:8px 12px;border-radius:6px;font-size:11px;white-space:nowrap;z-index:1000;opacity:0;pointer-events:none;transition:opacity .2s;max-width:280px;white-space:normal}
+.tooltip-wrapper:hover .tooltip{opacity:1}
+.info-icon:hover{border-color:var(--cyan);color:var(--cyan)}
 
-/* Network canvas */
-.network-wrap{position:relative;height:360px;background:var(--bg-tertiary);border-radius:8px;overflow:hidden}
-canvas.network-canvas{width:100%!important;height:100%!important}
+/* Heatmap styles */
+.heatmap-container{margin-top:8px}
+.heatmap-legend{display:flex;align-items:center;gap:12px;margin-bottom:8px;font-size:10px;color:var(--text-secondary);flex-wrap:wrap}
+.heatmap-legend .legend-item{display:flex;align-items:center;gap:4px}
+.heatmap-legend .legend-swatch{width:12px;height:12px;border-radius:2px;border:1px solid var(--border)}
+.heatmap-how{font-size:11px;color:var(--text-secondary);line-height:1.5;margin-bottom:10px;padding:8px 10px;background:var(--bg-tertiary);border-radius:6px;border-left:2px solid var(--purple)}
+.heatmap-table{border-collapse:collapse;font-size:9px;table-layout:fixed;width:100%}
+.heatmap-table th{background:var(--bg-tertiary);color:var(--text-secondary);padding:4px 2px;text-align:center;font-weight:600;font-size:9px}
+.heatmap-table td{height:26px;padding:1px;text-align:center;line-height:26px;border:1px solid var(--border);position:relative;cursor:default;font-weight:600;font-size:8px;overflow:hidden}
+.heatmap-table td:hover::after{content:attr(data-full);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#000;color:#fff;padding:4px 8px;border-radius:4px;font-size:10px;white-space:nowrap;z-index:100}
+.heatmap-table td.label-cell{background:var(--bg-tertiary);color:var(--text-secondary);font-weight:600;text-align:center;width:28px;min-width:28px;max-width:28px;line-height:normal;height:auto;font-size:9px}
+.heatmap-table th.corner{background:var(--bg-tertiary);width:28px;min-width:28px;max-width:28px}
+
+.diversification-score{margin-top:12px;padding:12px;background:var(--bg-tertiary);border-radius:6px;border-left:3px solid var(--blue)}
+.div-score-value{font-size:20px;font-weight:700;color:var(--cyan)}
+.div-score-label{font-size:11px;color:var(--text-secondary);margin-top:4px}
+.div-summary{margin-top:12px;padding:12px;background:rgba(57,210,192,.08);border-radius:6px;border:1px solid var(--cyan);font-size:12px;line-height:1.6}
+
+/* Regime playbook table */
+.regime-playbook{margin-top:12px;width:100%;border-collapse:collapse;font-size:11px}
+.regime-playbook th{background:var(--purple);color:#fff;padding:8px 10px;text-align:center;font-weight:600}
+.regime-playbook td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:left}
+.regime-playbook tr:nth-child(even){background:var(--bg-tertiary)}
+.regime-playbook tr:nth-child(odd){background:var(--bg-secondary)}
+.regime-playbook tr.current-regime{border-left:4px solid var(--cyan)}
+.regime-playbook .regime-name{font-weight:700;color:var(--cyan)}
+
+/* Intermarket cards */
+.intermarket-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
+.intermarket-card{background:var(--bg-tertiary);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
+.im-price{font-size:18px;font-weight:700;margin-bottom:4px}
+.im-change{font-size:13px;font-weight:600;margin-bottom:8px}
+.im-trend{font-size:20px;margin-bottom:8px}
+.im-badge{display:inline-block;padding:4px 8px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase;margin-bottom:8px}
+.im-explanation{font-size:10px;color:var(--text-secondary);line-height:1.4}
+.im-alignment{margin-top:12px;padding:12px;background:var(--bg-tertiary);border-radius:6px;font-size:12px}
+
+/* Fracture bars */
+.fracture-metric{margin-bottom:12px;padding:12px;background:var(--bg-tertiary);border-radius:6px}
+.fracture-label{font-size:12px;font-weight:600;margin-bottom:6px;display:flex;justify-content:space-between}
+.fracture-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;position:relative}
+.fracture-fill{height:100%;border-radius:4px;transition:width .3s}
+.fracture-severity{margin-top:12px;padding:12px;background:var(--bg-tertiary);border-radius:6px;border-left:3px solid;font-weight:600}
+.fracture-explanation{margin-top:12px;font-size:11px;color:var(--text-secondary);line-height:1.6}
 
 /* Conviction table */
 .conv-table{width:100%;border-collapse:collapse;font-size:12px}
@@ -80,8 +126,12 @@ canvas.network-canvas{width:100%!important;height:100%!important}
 .loading-overlay p{margin-top:14px;color:var(--text-secondary);font-size:13px}
 .error-msg{text-align:center;padding:40px;color:var(--red)}
 
+.what-to-do{margin-top:12px;padding:14px;background:var(--bg-tertiary);border-radius:8px;border-left:3px solid var(--cyan);font-size:12px;line-height:1.7}
+.what-to-do strong{color:var(--cyan)}
+
+@media(max-width:1200px){.intermarket-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:1000px){.metrics-row{grid-template-columns:repeat(3,1fr)}.two-col{grid-template-columns:1fr}}
-@media(max-width:600px){.metrics-row{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.metrics-row{grid-template-columns:repeat(2,1fr)}.intermarket-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -93,28 +143,105 @@ canvas.network-canvas{width:100%!important;height:100%!important}
 
 <div class="container" style="opacity:0" id="app">
   <header>
-    <h1><span class="icon">&#128302;</span> Market Symphony <span class="ver">v3.5 — The Veil (Resonance Oracle)</span></h1>
-    <p>Sector rotation &amp; safety engine — 11 layers | RS + intermarket + conformal bands + RSP breadth confirmation</p>
+    <h1><span class="icon">&#128302;</span> Market Symphony <span class="ver">v4.0 — The Veil Enhanced</span></h1>
+    <p>Sector rotation &amp; safety engine — 11 layers | Correlation heatmap, regime playbook, intermarket cards, fracture metrics</p>
   </header>
 
   <!-- Top 6 metrics -->
   <div class="metrics-row" id="metricsRow">
-    <div class="card metric-card"><div class="m-label">Veil Safety Score</div><div class="m-value" id="mSafety">--</div><div class="m-sub" id="mSafetySub">Loading...</div></div>
-    <div class="card metric-card"><div class="m-label">Hidden Regime</div><div class="m-value" id="mRegime" style="font-size:16px">--</div><div class="m-sub" id="mRegimeSub">--</div></div>
-    <div class="card metric-card"><div class="m-label">SPY Price</div><div class="m-value" id="mSpy">--</div><div class="m-sub" id="mSpySub">--</div></div>
-    <div class="card metric-card"><div class="m-label">Breadth 200 DMA</div><div class="m-value" id="mBreadth">--</div><div class="m-sub" id="mBreadthSub">--</div></div>
-    <div class="card metric-card"><div class="m-label">Copper/Gold Ratio</div><div class="m-value" id="mCuAu">--</div><div class="m-sub" id="mCuAuSub">--</div></div>
-    <div class="card metric-card"><div class="m-label">Harmony Entropy</div><div class="m-value" id="mEntropy">--</div><div class="m-sub" id="mEntropySub">--</div></div>
+    <div class="card metric-card">
+      <div class="m-label">
+        <span>Veil Safety Score</span>
+        <span class="tooltip-wrapper">
+          <span class="info-icon">ⓘ</span>
+          <span class="tooltip">Master ensemble score (0-100) blending 6 layers. Above 65 = bullish, below 45 = defensive.</span>
+        </span>
+      </div>
+      <div class="m-value" id="mSafety">--</div>
+      <div class="m-sub" id="mSafetySub">Loading...</div>
+    </div>
+    <div class="card metric-card">
+      <div class="m-label">
+        <span>Hidden Regime</span>
+        <span class="tooltip-wrapper">
+          <span class="info-icon">ⓘ</span>
+          <span class="tooltip">Bayesian classification of market phase. Determines your overall allocation stance.</span>
+        </span>
+      </div>
+      <div class="m-value" id="mRegime" style="font-size:16px">--</div>
+      <div class="m-sub" id="mRegimeSub">--</div>
+    </div>
+    <div class="card metric-card">
+      <div class="m-label">
+        <span>SPY Price</span>
+        <span class="tooltip-wrapper">
+          <span class="info-icon">ⓘ</span>
+          <span class="tooltip">S&amp;P 500 ETF — your broad market benchmark.</span>
+        </span>
+      </div>
+      <div class="m-value" id="mSpy">--</div>
+      <div class="m-sub" id="mSpySub">--</div>
+    </div>
+    <div class="card metric-card">
+      <div class="m-label">
+        <span>Breadth 200 DMA</span>
+        <span class="tooltip-wrapper">
+          <span class="info-icon">ⓘ</span>
+          <span class="tooltip">% of 11 sectors trading above their 200-day moving average. Above 70% = healthy bull market.</span>
+        </span>
+      </div>
+      <div class="m-value" id="mBreadth">--</div>
+      <div class="m-sub" id="mBreadthSub">--</div>
+    </div>
+    <div class="card metric-card">
+      <div class="m-label">
+        <span>Copper/Gold Ratio</span>
+        <span class="tooltip-wrapper">
+          <span class="info-icon">ⓘ</span>
+          <span class="tooltip">CPER/GLD — rising means economic optimism (risk-on), falling means flight to safety.</span>
+        </span>
+      </div>
+      <div class="m-value" id="mCuAu">--</div>
+      <div class="m-sub" id="mCuAuSub">--</div>
+    </div>
+    <div class="card metric-card">
+      <div class="m-label">
+        <span>Harmony Entropy</span>
+        <span class="tooltip-wrapper">
+          <span class="info-icon">ⓘ</span>
+          <span class="tooltip">Dispersion of relative strength across sectors. Healthy = broad rotation, Crowded = concentration risk.</span>
+        </span>
+      </div>
+      <div class="m-value" id="mEntropy">--</div>
+      <div class="m-sub" id="mEntropySub">--</div>
+    </div>
   </div>
 
-  <!-- Two-column: Network + Conviction Table -->
+  <!-- Two-column: Heatmap + Conviction Table -->
   <div class="two-col">
     <div class="card">
-      <div class="section-title">Leadership Contagion Network</div>
-      <div class="network-wrap"><canvas id="networkCanvas" class="network-canvas"></canvas></div>
+      <div class="section-title">
+        <span>Sector Correlation &amp; Diversification</span>
+        <span class="tooltip-wrapper">
+          <span class="info-icon">ⓘ</span>
+          <span class="tooltip">11×11 heatmap of sector correlations. Green (low <0.4), Yellow (moderate 0.4-0.7), Red (high >0.7).</span>
+        </span>
+      </div>
+      <div id="heatmapContainer" class="heatmap-container"></div>
+      <div class="diversification-score">
+        <div class="div-score-label">Diversification Score</div>
+        <div class="div-score-value" id="divScore">--</div>
+      </div>
+      <div class="div-summary" id="divSummary">Loading...</div>
     </div>
     <div class="card">
-      <div class="section-title">Sector Conviction Rankings</div>
+      <div class="section-title">
+        <span>Sector Conviction Rankings</span>
+        <span class="tooltip-wrapper">
+          <span class="info-icon">ⓘ</span>
+          <span class="tooltip">Ranked sectors by relative strength and velocity. 6m Prob = forward 6-month outperformance probability.</span>
+        </span>
+      </div>
       <div style="overflow-x:auto"><table class="conv-table" id="convTable"><thead><tr><th>Sector</th><th>RS Rank</th><th>Velocity</th><th>6m Prob</th><th>Signal</th></tr></thead><tbody></tbody></table></div>
     </div>
   </div>
@@ -347,8 +474,6 @@ function analyzeAll() {
   }
 
   // RSP/SPY Breadth Confirmation Layer
-  // RSP = equal-weight S&P 500. When RSP outperforms SPY, true broadening is confirmed
-  // (not just mega-cap driven). When RSP underperforms, breadth is narrowing even if headline looks ok.
   const rsp = allData['RSP'];
   let rspSpyRatio = null, rspSpyTrend = null, rspConfirmation = 'neutral';
   if (rsp && spy.closes.length >= 60) {
@@ -363,7 +488,6 @@ function analyzeAll() {
     if (rspRsNow !== null && rspRs30 !== null) {
       rspSpyRatio = rspRsNow;
       rspSpyTrend = rspRsNow > rspRs30 ? 'Rising' : 'Falling';
-      // Confirmation logic: rising RSP/SPY = true broadening; falling = narrowing/mega-cap driven
       if (rspRsNow > rspRs30 && rspRsNow > rspRs60) rspConfirmation = 'confirmed';
       else if (rspRsNow < rspRs30 && rspRsNow < rspRs60) rspConfirmation = 'diverging';
       else rspConfirmation = 'neutral';
@@ -387,24 +511,65 @@ function analyzeAll() {
   const entropy = rsStd > 0.15 ? 'Healthy' : rsStd > 0.08 ? 'Moderate' : 'Crowded';
   const entropyTrend = avgVel > 0 ? 'Rising' : 'Falling';
 
-  // Sector correlations for network
-  const correlations = [];
+  // Full 11x11 correlation matrix for heatmap
+  const corrMatrix = {};
   for (let i = 0; i < SECTOR_TICKERS.length; i++) {
-    for (let j = i + 1; j < SECTOR_TICKERS.length; j++) {
-      const a = sectorAnalysis[SECTOR_TICKERS[i]]?.closes;
-      const b = sectorAnalysis[SECTOR_TICKERS[j]]?.closes;
-      if (a && b) {
-        const corr = correlation(a, b, 126);
-        if (corr > 0.6) {
-          correlations.push({ from: SECTOR_TICKERS[i], to: SECTOR_TICKERS[j], weight: corr });
-        }
+    for (let j = 0; j < SECTOR_TICKERS.length; j++) {
+      const key = `${SECTOR_TICKERS[i]}_${SECTOR_TICKERS[j]}`;
+      if (i === j) {
+        corrMatrix[key] = 1.0;
+      } else if (i > j) {
+        // Symmetric
+        corrMatrix[key] = corrMatrix[`${SECTOR_TICKERS[j]}_${SECTOR_TICKERS[i]}`];
+      } else {
+        const a = sectorAnalysis[SECTOR_TICKERS[i]]?.closes;
+        const b = sectorAnalysis[SECTOR_TICKERS[j]]?.closes;
+        corrMatrix[key] = (a && b) ? correlation(a, b, 126) : 0;
       }
     }
   }
 
+  // Diversification score: 100 - (average pairwise correlation * 100)
+  let sumCorr = 0, count = 0;
+  for (let i = 0; i < SECTOR_TICKERS.length; i++) {
+    for (let j = i + 1; j < SECTOR_TICKERS.length; j++) {
+      const key = `${SECTOR_TICKERS[i]}_${SECTOR_TICKERS[j]}`;
+      sumCorr += corrMatrix[key];
+      count++;
+    }
+  }
+  const avgCorr = count > 0 ? sumCorr / count : 0.6;
+  const diversificationScore = Math.round(100 - (avgCorr * 100));
+
+  // Velocity standard deviation for fracture metric
+  const velocityStdDev = allVelValues.length > 1 ? Math.sqrt(allVelValues.reduce((s, v) => s + (v - avgVel) ** 2, 0) / allVelValues.length) : 0;
+
+  // Count correlation density (strong edges)
+  let strongCorrCount = 0;
+  for (let i = 0; i < SECTOR_TICKERS.length; i++) {
+    for (let j = i + 1; j < SECTOR_TICKERS.length; j++) {
+      const key = `${SECTOR_TICKERS[i]}_${SECTOR_TICKERS[j]}`;
+      if (corrMatrix[key] > 0.7) strongCorrCount++;
+    }
+  }
+  const maxPossibleEdges = (SECTOR_TICKERS.length * (SECTOR_TICKERS.length - 1)) / 2;
+  const correlationDensity = (strongCorrCount / maxPossibleEdges) * 100;
+
+  // 30-day price changes for intermarket
+  const get30DayChange = (ticker) => {
+    const data = allData[ticker];
+    if (!data || data.closes.length < 31) return null;
+    const now = data.closes[data.closes.length - 1];
+    const then = data.closes[data.closes.length - 31];
+    return ((now - then) / then) * 100;
+  };
+  const tlt30d = get30DayChange('TLT');
+  const gld30d = get30DayChange('GLD');
+  const uup30d = get30DayChange('UUP');
+  const cper30d = get30DayChange('CPER');
+
   // Veil Safety Score (with RSP breadth confirmation layer)
   const rsRankAvg = Object.values(rsRanks).reduce((a, b) => a + b, 0) / Object.values(rsRanks).length;
-  // RSP confirmation bonus/penalty: confirmed broadening adds up to +8, diverging subtracts up to -8
   const rspBonus = rspConfirmation === 'confirmed' ? 8 : rspConfirmation === 'diverging' ? -8 : 0;
   const safetyRaw = 0.25 * breadth200 + 0.20 * (avgVel * 500 + 50) + 0.15 * rsRankAvg + 0.15 * (regimeScore * 100 + 50) + 0.10 * 60 + 0.15 * 65 + rspBonus;
   const safety = Math.round(Math.min(100, Math.max(0, safetyRaw)));
@@ -431,20 +596,18 @@ function analyzeAll() {
   const tltPrice = tlt ? last(tlt.closes) : null;
   const gldPrice = gld ? last(gld.closes) : null;
   const uupPrice = uup ? last(uup.closes) : null;
+  const cperPrice = cper ? last(cper.closes) : null;
 
   // 6m probability with conformal bands
-  // Point estimate + 95% confidence interval based on RS volatility and regime uncertainty
   const probabilities = {};
   const conformalBands = {};
   SECTOR_TICKERS.forEach(t => {
     const base = rsRanks[t] || 50;
     const vr = velRanks[t] || 50;
     const point = Math.round(Math.min(95, Math.max(15, base * 0.7 + vr * 0.3 + 10)));
-    // Conformal band width: wider when regime is uncertain, velocity is low, or RS rank is mid-range
-    const regimeUncertainty = Math.max(0, 1 - regimeProb / 100); // 0 = certain, 1 = uncertain
-    const midRangePenalty = 1 - Math.abs(base - 50) / 50; // wider bands near 50th percentile
+    const regimeUncertainty = Math.max(0, 1 - regimeProb / 100);
+    const midRangePenalty = 1 - Math.abs(base - 50) / 50;
     const bandWidth = Math.round(8 + regimeUncertainty * 10 + midRangePenalty * 6);
-    // RSP divergence widens bands (less confidence in any sector call when breadth is fake)
     const rspWidening = rspConfirmation === 'diverging' ? 4 : rspConfirmation === 'confirmed' ? -2 : 0;
     const finalWidth = Math.max(4, bandWidth + rspWidening);
     const lo = Math.max(5, point - finalWidth);
@@ -460,130 +623,20 @@ function analyzeAll() {
     breadth200,
     entropy, entropyTrend,
     sectorAnalysis, rsRanks, velRanks, probabilities, conformalBands,
-    correlations,
+    corrMatrix, diversificationScore,
     topSectors, bottomSectors,
     ranked,
-    tltPrice, gldPrice, uupPrice,
+    tltPrice, gldPrice, uupPrice, cperPrice,
+    tlt30d, gld30d, uup30d, cper30d,
     cuAuRatio, cuAuTrend,
     rspSpyRatio, rspSpyTrend, rspConfirmation,
-    regimeScore
+    regimeScore,
+    velocityStdDev, correlationDensity, avgCorr
   };
 }
 
 // ═══════════════════════════════════════
-// NETWORK GRAPH RENDERER
-// ═══════════════════════════════════════
-function drawNetwork(correlations) {
-  const canvas = $('#networkCanvas');
-  const rect = canvas.parentElement.getBoundingClientRect();
-  canvas.width = rect.width * 2;
-  canvas.height = rect.height * 2;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(2, 2);
-  const w = rect.width, h = rect.height;
-
-  // Spring layout (simple force-directed)
-  const nodes = {};
-  SECTOR_TICKERS.forEach((t, i) => {
-    const angle = (i / SECTOR_TICKERS.length) * Math.PI * 2;
-    const r = Math.min(w, h) * 0.32;
-    nodes[t] = { x: w / 2 + Math.cos(angle) * r, y: h / 2 + Math.sin(angle) * r };
-  });
-
-  // Simple force iterations
-  for (let iter = 0; iter < 80; iter++) {
-    // Repulsion between all nodes
-    const tickers = Object.keys(nodes);
-    for (let i = 0; i < tickers.length; i++) {
-      for (let j = i + 1; j < tickers.length; j++) {
-        const a = nodes[tickers[i]], b = nodes[tickers[j]];
-        const dx = b.x - a.x, dy = b.y - a.y;
-        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        const force = 800 / (dist * dist);
-        const fx = (dx / dist) * force, fy = (dy / dist) * force;
-        a.x -= fx; a.y -= fy;
-        b.x += fx; b.y += fy;
-      }
-    }
-    // Attraction along edges
-    correlations.forEach(e => {
-      const a = nodes[e.from], b = nodes[e.to];
-      if (!a || !b) return;
-      const dx = b.x - a.x, dy = b.y - a.y;
-      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      const force = (dist - 100) * 0.01 * e.weight;
-      const fx = (dx / dist) * force, fy = (dy / dist) * force;
-      a.x += fx; a.y += fy;
-      b.x -= fx; b.y -= fy;
-    });
-    // Center gravity
-    Object.values(nodes).forEach(n => {
-      n.x += (w / 2 - n.x) * 0.02;
-      n.y += (h / 2 - n.y) * 0.02;
-    });
-  }
-
-  // Clamp to bounds
-  const pad = 40;
-  Object.values(nodes).forEach(n => {
-    n.x = Math.max(pad, Math.min(w - pad, n.x));
-    n.y = Math.max(pad, Math.min(h - pad, n.y));
-  });
-
-  // Draw edges
-  correlations.forEach(e => {
-    const a = nodes[e.from], b = nodes[e.to];
-    if (!a || !b) return;
-    ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.lineTo(b.x, b.y);
-    ctx.strokeStyle = `rgba(88,166,255,${e.weight * 0.5})`;
-    ctx.lineWidth = e.weight * 2;
-    ctx.stroke();
-  });
-
-  // Draw nodes
-  Object.entries(nodes).forEach(([ticker, pos]) => {
-    // Connections count for size
-    const conns = correlations.filter(e => e.from === ticker || e.to === ticker).length;
-    const radius = 14 + conns * 2;
-
-    // Glow
-    const grad = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, radius * 1.5);
-    const color = SECTOR_COLORS[ticker] || '#58a6ff';
-    grad.addColorStop(0, color);
-    grad.addColorStop(1, 'transparent');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, radius * 1.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Node circle
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.strokeStyle = '#0d1117';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Label
-    ctx.font = 'bold 10px -apple-system, sans-serif';
-    ctx.fillStyle = '#0d1117';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(ticker.replace('XL', ''), pos.x, pos.y);
-  });
-
-  // Legend
-  ctx.font = '10px -apple-system, sans-serif';
-  ctx.fillStyle = '#8b949e';
-  ctx.textAlign = 'left';
-  ctx.fillText('Node size = correlation connections | Edge opacity = correlation strength', 10, h - 10);
-}
-
-// ═══════════════════════════════════════
-// RENDERING
+// RENDERING FUNCTIONS
 // ═══════════════════════════════════════
 function renderMetrics(a) {
   $('#mSafety').textContent = a.safety;
@@ -622,6 +675,109 @@ function renderMetrics(a) {
   $('#mEntropySub').style.color = a.entropyTrend === 'Rising' ? 'var(--green)' : 'var(--red)';
 }
 
+function renderHeatmap(a) {
+  const container = $('#heatmapContainer');
+
+  // Color legend + how-to-read guide
+  let html = '';
+  html += '<div class="heatmap-how"><strong style="color:var(--purple)">How to read:</strong> Each cell shows the 6-month correlation between two sectors. <span style="color:var(--green)">Green = low correlation</span> (good for diversification). <span style="color:var(--orange)">Yellow = moderate</span>. <span style="color:var(--red)">Red/pink = high correlation</span> (these sectors move together — holding both doubles your risk). Hover any cell for full details.</div>';
+  html += '<div class="heatmap-legend">';
+  html += '<span class="legend-item"><span class="legend-swatch" style="background:#003b50"></span> &lt; 0 (inverse)</span>';
+  html += '<span class="legend-item"><span class="legend-swatch" style="background:#00a050"></span> 0 - 0.4 (diversifying)</span>';
+  html += '<span class="legend-item"><span class="legend-swatch" style="background:#d29922"></span> 0.4 - 0.7 (moderate)</span>';
+  html += '<span class="legend-item"><span class="legend-swatch" style="background:#f85149"></span> &gt; 0.7 (concentrated risk)</span>';
+  html += '</div>';
+
+  html += '<table class="heatmap-table"><tr><th class="corner"></th>';
+
+  // Header row
+  SECTOR_TICKERS.forEach(t => {
+    const suffix = t.replace('XL', '');
+    html += `<th title="${SECTOR_NAMES[t]}">${suffix}</th>`;
+  });
+  html += '</tr>';
+
+  // Data rows
+  SECTOR_TICKERS.forEach((rowTicker, i) => {
+    html += `<tr><td class="label-cell" title="${SECTOR_NAMES[rowTicker]}">${rowTicker.replace('XL', '')}</td>`;
+    SECTOR_TICKERS.forEach((colTicker, j) => {
+      const key = `${rowTicker}_${colTicker}`;
+      const corr = a.corrMatrix[key] || 0;
+      const absCorr = Math.abs(corr);
+      let bgColor, textColor = '#e6edf3';
+
+      if (i === j) {
+        bgColor = '#1a3a4a'; // diagonal
+      } else if (corr < 0) {
+        // Negative correlation: blue-green shades (inverse = great diversifier)
+        const intensity = Math.min(1, absCorr / 0.6);
+        bgColor = `rgb(0, ${Math.round(40 + intensity * 80)}, ${Math.round(60 + intensity * 60)})`;
+      } else if (corr < 0.4) {
+        const intensity = corr / 0.4;
+        bgColor = `rgb(0, ${Math.round(80 + intensity * 80)}, ${Math.round(50 + intensity * 30)})`;
+      } else if (corr < 0.7) {
+        const intensity = (corr - 0.4) / 0.3;
+        const r = Math.round(180 + intensity * 30);
+        const g = Math.round(140 - intensity * 10);
+        bgColor = `rgb(${r}, ${g}, 34)`;
+        textColor = '#000';
+      } else {
+        const intensity = Math.min(1, (corr - 0.7) / 0.3);
+        bgColor = `rgb(${Math.round(220 + intensity * 35)}, ${Math.round(60 - intensity * 40)}, ${Math.round(80 - intensity * 40)})`;
+      }
+
+      const label = i === j ? '—' : corr.toFixed(2);
+      html += `<td style="background:${bgColor};color:${textColor}" data-full="${SECTOR_NAMES[rowTicker]} vs ${SECTOR_NAMES[colTicker]}: ${corr.toFixed(2)}">${label}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</table>';
+
+  container.innerHTML = html;
+
+  // Render diversification score
+  const divScoreEl = $('#divScore');
+  divScoreEl.textContent = a.diversificationScore + '/100';
+  divScoreEl.style.color = a.diversificationScore > 70 ? 'var(--green)' : a.diversificationScore > 50 ? 'var(--orange)' : 'var(--red)';
+  const divQual = a.diversificationScore > 70 ? 'Well-diversified' : a.diversificationScore > 50 ? 'Moderate concentration' : 'Highly concentrated — reduce overlap';
+  $('#divScore').insertAdjacentHTML('afterend', `<div style="font-size:11px;color:var(--text-secondary);margin-top:2px">${divQual}</div>`);
+
+  // Find most correlated pair among TOP-ranked sectors, and best diversifier
+  const topSectors = a.topSectors.slice(0, 5);
+  let maxCorr = -2, maxPair = null;
+  for (let i = 0; i < topSectors.length; i++) {
+    for (let j = i + 1; j < topSectors.length; j++) {
+      const key = `${topSectors[i]}_${topSectors[j]}`;
+      const c = a.corrMatrix[key] || 0;
+      if (c > maxCorr) { maxCorr = c; maxPair = [topSectors[i], topSectors[j]]; }
+    }
+  }
+
+  // Find least correlated sector to the top picks
+  let bestDiversifier = null, lowestAvgCorr = 999;
+  SECTOR_TICKERS.forEach(t => {
+    if (topSectors.slice(0, 3).includes(t)) return;
+    let sum = 0;
+    topSectors.slice(0, 3).forEach(top => {
+      const key = `${t}_${top}`;
+      sum += Math.abs(a.corrMatrix[key] || 0);
+    });
+    const avg = sum / 3;
+    if (avg < lowestAvgCorr) { lowestAvgCorr = avg; bestDiversifier = t; }
+  });
+
+  let recommendation = '';
+  if (maxPair && maxCorr > 0.7) {
+    recommendation = `<span style="color:var(--red)">Warning:</span> Your top picks <strong>${maxPair[0]}</strong> and <strong>${maxPair[1]}</strong> are highly correlated (${maxCorr.toFixed(2)}) — they'll rise and fall together. Consider swapping one for <strong style="color:var(--green)">${bestDiversifier}</strong> (avg correlation to your other top picks: ${lowestAvgCorr.toFixed(2)}).`;
+  } else if (maxPair && maxCorr > 0.5) {
+    recommendation = `Your top picks have moderate correlation. Highest overlap: <strong>${maxPair[0]}-${maxPair[1]}</strong> (${maxCorr.toFixed(2)}). For better diversification, consider adding <strong style="color:var(--green)">${bestDiversifier}</strong> (avg correlation: ${lowestAvgCorr.toFixed(2)}).`;
+  } else {
+    recommendation = `<span style="color:var(--green)">Good news:</span> Your top picks are well-diversified (highest correlation: ${maxCorr.toFixed(2)}). Best diversifier to add: <strong>${bestDiversifier}</strong> (avg correlation to top picks: ${lowestAvgCorr.toFixed(2)}).`;
+  }
+
+  $('#divSummary').innerHTML = recommendation;
+}
+
 function renderConvictionTable(a) {
   const tbody = $('#convTable tbody');
   const sorted = [...SECTOR_TICKERS].sort((x, y) => (a.rsRanks[y] || 0) - (a.rsRanks[x] || 0));
@@ -641,7 +797,6 @@ function renderConvictionTable(a) {
     else if (rsR >= 20) { signal = 'UNDERWEIGHT'; sigColor = 'var(--red-lt)'; }
     else { signal = 'AVOID'; sigColor = 'var(--red)'; }
 
-    // Conformal band color: narrow band = high confidence (green), wide = uncertain (orange)
     const bandWidth = band.hi - band.lo;
     const bandColor = bandWidth <= 16 ? 'var(--green)' : bandWidth <= 24 ? 'var(--orange)' : 'var(--red-lt)';
 
@@ -674,6 +829,50 @@ function renderRegime(a) {
   const rspColor = a.rspConfirmation === 'confirmed' ? 'var(--green)' : a.rspConfirmation === 'diverging' ? 'var(--red)' : 'var(--orange)';
   const rspLabel = a.rspConfirmation === 'confirmed' ? 'CONFIRMED — RSP outperforming SPY (true broadening)' : a.rspConfirmation === 'diverging' ? 'DIVERGING — RSP underperforming SPY (mega-cap driven, breadth is fake)' : 'NEUTRAL — RSP tracking SPY (no clear signal)';
   const rspTrendStr = a.rspSpyTrend ? ` | RSP/SPY trend: ${a.rspSpyTrend}` : '';
+
+  // Build regime playbook table
+  const regimes = [
+    { name: 'Strong Expansion', breadth: '>70%', velocity: 'Rising', allocation: '80-90%', characteristics: 'Broad rally, strong momentum' },
+    { name: 'Broadening Rotation', breadth: '50-70%', velocity: 'Stable', allocation: '70-80%', characteristics: 'Healthy sector rotation' },
+    { name: 'Narrowing / Transition', breadth: '30-50%', velocity: 'Weakening', allocation: '55-65%', characteristics: 'Unclear direction, consolidation' },
+    { name: 'Defensive / Contraction', breadth: '<30%', velocity: 'Falling', allocation: '40-50%', characteristics: 'Decline, flight to safety' }
+  ];
+
+  let regimeTableHtml = '<table class="regime-playbook"><tr><th>Regime</th><th>Breadth</th><th>Velocity</th><th>Equity %</th><th>Characteristics</th></tr>';
+  regimes.forEach(r => {
+    const isCurrent = r.name === a.regime;
+    regimeTableHtml += `<tr ${isCurrent ? 'class="current-regime"' : ''}>
+      <td ${isCurrent ? 'class="regime-name"' : ''}>${r.name}</td>
+      <td>${r.breadth}</td>
+      <td>${r.velocity}</td>
+      <td style="font-weight:700">${r.allocation}</td>
+      <td>${r.characteristics}</td>
+    </tr>`;
+  });
+  regimeTableHtml += '</table>';
+
+  // What to do box
+  let equityAlloc = '70-80%', bondAlloc = '10-15%', goldAlloc = '5-10%', cashAlloc = '5-10%';
+  if (a.safety >= 80) { equityAlloc = '80-90%'; bondAlloc = '5-10%'; goldAlloc = '2-5%'; cashAlloc = '0-5%'; }
+  else if (a.safety < 45) { equityAlloc = '40-50%'; bondAlloc = '20-30%'; goldAlloc = '10-15%'; cashAlloc = '10-15%'; }
+
+  const topStr = a.topSectors.slice(0, 3).map(t => `<span style="color:${SECTOR_COLORS[t]};font-weight:700">${t}</span>`).join(', ');
+  const bottomStr = a.bottomSectors.map(t => `<span style="color:var(--text-secondary)">${t}</span>`).join(', ');
+
+  let actionSummary = 'Maintain broad equity exposure with tactical rotation into leading sectors.';
+  if (a.safety >= 80) actionSummary = 'Aggressive positioning — maximize exposure to confirmed leadership. Strong breadth supports concentration in top performers.';
+  else if (a.safety < 45) actionSummary = 'Shift to defensive — raise cash, favor bonds and gold. Wait for regime confirmation before re-engaging.';
+
+  const whatToDoHtml = `
+    <div class="what-to-do">
+      <strong>Equity Allocation:</strong> ${equityAlloc}<br>
+      <strong>Bonds (TLT):</strong> ${bondAlloc} | <strong>Gold (GLD):</strong> ${goldAlloc} | <strong>Cash:</strong> ${cashAlloc}<br>
+      <strong>Overweight:</strong> ${topStr}<br>
+      <strong>Underweight/Avoid:</strong> ${bottomStr}<br>
+      <strong>Action:</strong> ${actionSummary}
+    </div>
+  `;
+
   $('#regimeContent').innerHTML = `
     <div style="background:${isGood ? 'rgba(63,185,80,.1)' : 'rgba(248,81,73,.1)'};border:1px solid ${isGood ? 'var(--green)' : 'var(--red)'};border-radius:8px;padding:14px;margin-bottom:12px">
       <span style="font-weight:700;color:${isGood ? 'var(--green)' : 'var(--red)'}">Current Regime: ${a.regime}</span>
@@ -682,6 +881,14 @@ function renderRegime(a) {
     <div style="background:rgba(57,210,192,.08);border:1px solid var(--cyan);border-radius:8px;padding:14px;margin-bottom:12px">
       <span style="font-weight:700;color:var(--cyan)">Small-Cap Breadth Confirmation (RSP vs SPY):</span>
       <span style="color:${rspColor};font-weight:600;margin-left:8px">${rspLabel}</span>${rspTrendStr}
+    </div>
+    <div style="margin-bottom:12px;font-size:12px">
+      <strong>Regime Playbook (Current Row Highlighted)</strong>
+      ${regimeTableHtml}
+    </div>
+    <div style="margin-bottom:12px">
+      <strong>What To Do Right Now</strong>
+      ${whatToDoHtml}
     </div>
     <p>The regime detector blends three signals: market breadth (${a.breadth200.toFixed(0)}% of sectors above 200 DMA), relative strength velocity dispersion, and acceleration trends. The RSP/SPY layer validates whether breadth is genuine or concentrated in mega-caps. ${isGood ? (a.rspConfirmation === 'confirmed' ? 'Both regime and breadth confirmation are aligned — high confidence in broad equity exposure.' : a.rspConfirmation === 'diverging' ? 'Caution: regime looks bullish but RSP divergence suggests concentration risk. Consider tighter stops.' : 'The current regime favors broad equity exposure with tactical overweights in leading sectors.') : 'The current regime suggests defensive positioning — favor low-beta sectors and increase cash/bond allocation.'}</p>
     <p style="margin-top:10px;color:var(--text-secondary)">The Bayesian probability is derived from comparing current conditions against historical regime distributions. A probability above 75% is considered high confidence. The RSP confirmation adds/subtracts up to 8 points from the Veil Safety Score.</p>
@@ -692,24 +899,142 @@ function renderIntermarket(a) {
   const tltStr = a.tltPrice ? '$' + a.tltPrice.toFixed(0) : 'N/A';
   const gldStr = a.gldPrice ? '$' + a.gldPrice.toFixed(0) : 'N/A';
   const uupStr = a.uupPrice ? '$' + a.uupPrice.toFixed(2) : 'N/A';
+  const cperStr = a.cperPrice ? '$' + a.cperPrice.toFixed(2) : 'N/A';
+
+  const tlt30 = a.tlt30d !== null ? a.tlt30d.toFixed(2) : 'N/A';
+  const gld30 = a.gld30d !== null ? a.gld30d.toFixed(2) : 'N/A';
+  const uup30 = a.uup30d !== null ? a.uup30d.toFixed(2) : 'N/A';
+  const cper30 = a.cper30d !== null ? a.cper30d.toFixed(2) : 'N/A';
+
+  const getTrendArrow = (change) => change > 0 ? '▲' : change < 0 ? '▼' : '-';
+  const getTrendColor = (change) => change > 0 ? 'var(--green)' : change < 0 ? 'var(--red)' : 'var(--text-secondary)';
+  const getBadge = (name, isRiskOn) => {
+    const color = isRiskOn === 'RISK-ON' ? 'var(--green)' : isRiskOn === 'RISK-OFF' ? 'var(--red)' : 'var(--orange)';
+    const bgColor = isRiskOn === 'RISK-ON' ? 'rgba(63,185,80,.2)' : isRiskOn === 'RISK-OFF' ? 'rgba(248,81,73,.2)' : 'rgba(210,153,34,.2)';
+    return `<span class="im-badge" style="background:${bgColor};border:1px solid ${color};color:${color}">${isRiskOn}</span>`;
+  };
+
+  // Determine badges
+  const tltBadge = a.tlt30d !== null && a.tlt30d < -2 ? 'RISK-OFF' : a.tlt30d !== null && a.tlt30d > 2 ? 'RISK-ON' : 'NEUTRAL';
+  const gldBadge = a.gld30d !== null && a.gld30d > 3 ? 'RISK-OFF' : a.gld30d !== null && a.gld30d < -2 ? 'RISK-ON' : 'NEUTRAL';
+  const uupBadge = a.uup30d !== null && a.uup30d > 2 ? 'RISK-OFF' : a.uup30d !== null && a.uup30d < -1 ? 'RISK-ON' : 'NEUTRAL';
+  const cperGldBadge = a.cuAuTrend === 'Rising' ? 'RISK-ON' : a.cuAuTrend === 'Falling' ? 'RISK-OFF' : 'NEUTRAL';
+
+  const tltExplain = tltBadge === 'RISK-OFF' ? 'Long-term yields rising, flight-to-safety flows weakening' : tltBadge === 'RISK-ON' ? 'Long yields falling, safe-haven bid present' : 'Neutral bond positioning';
+  const gldExplain = gldBadge === 'RISK-OFF' ? 'Gold declining, risk appetite returning' : gldBadge === 'RISK-ON' ? 'Gold surging, fear premium elevated' : 'Gold stable, mixed signals';
+  const uupExplain = uupBadge === 'RISK-OFF' ? 'Dollar weakening, risk-on appetite' : uupBadge === 'RISK-ON' ? 'Dollar strength, flight to USD safety' : 'Dollar sideways, no clear direction';
+  const cperExplain = cperGldBadge === 'RISK-ON' ? 'Copper/gold rising, economic optimism' : cperGldBadge === 'RISK-OFF' ? 'Copper/gold falling, risk-off sentiment' : 'Mixed economic signals';
+
+  // Count risk-on vs risk-off
+  const badges = [tltBadge, gldBadge, uupBadge, cperGldBadge];
+  const riskOnCount = badges.filter(b => b === 'RISK-ON').length;
+  const riskOffCount = badges.filter(b => b === 'RISK-OFF').length;
+  const alignment = riskOnCount >= 3 ? 'Confirming Equity Bullishness' : riskOffCount >= 3 ? 'Diverging into Risk-Off' : 'Mixed / Neutral';
+  const alignmentColor = riskOnCount >= 3 ? 'var(--green)' : riskOffCount >= 3 ? 'var(--red)' : 'var(--orange)';
+
   $('#intermarketContent').innerHTML = `
-    <div class="stats-row">
-      <div class="stat-pill"><div class="stat" style="color:var(--blue)">TLT ${tltStr}</div><div class="stat-label">20+ Yr Treasury</div></div>
-      <div class="stat-pill"><div class="stat" style="color:var(--orange)">GLD ${gldStr}</div><div class="stat-label">Gold</div></div>
-      <div class="stat-pill"><div class="stat" style="color:var(--green)">UUP ${uupStr}</div><div class="stat-label">US Dollar</div></div>
+    <div class="intermarket-grid">
+      <div class="intermarket-card">
+        <div class="im-price" style="color:var(--blue)">${tltStr}</div>
+        <div class="im-change" style="color:${getTrendColor(a.tlt30d)}">${tlt30}%</div>
+        <div class="im-trend" style="color:${getTrendColor(a.tlt30d)}">${getTrendArrow(a.tlt30d)}</div>
+        ${getBadge('TLT', tltBadge)}
+        <div class="im-explanation">${tltExplain}</div>
+      </div>
+      <div class="intermarket-card">
+        <div class="im-price" style="color:var(--orange)">${gldStr}</div>
+        <div class="im-change" style="color:${getTrendColor(a.gld30d)}">${gld30}%</div>
+        <div class="im-trend" style="color:${getTrendColor(a.gld30d)}">${getTrendArrow(a.gld30d)}</div>
+        ${getBadge('GLD', gldBadge)}
+        <div class="im-explanation">${gldExplain}</div>
+      </div>
+      <div class="intermarket-card">
+        <div class="im-price" style="color:var(--green)">${uupStr}</div>
+        <div class="im-change" style="color:${getTrendColor(a.uup30d)}">${uup30}%</div>
+        <div class="im-trend" style="color:${getTrendColor(a.uup30d)}">${getTrendArrow(a.uup30d)}</div>
+        ${getBadge('UUP', uupBadge)}
+        <div class="im-explanation">${uupExplain}</div>
+      </div>
+      <div class="intermarket-card">
+        <div class="im-price" style="color:var(--magenta)">${cperStr}</div>
+        <div class="im-change" style="color:${getTrendColor(a.cper30d)}">${cper30}%</div>
+        <div class="im-trend" style="color:${getTrendColor(a.cper30d)}">${getTrendArrow(a.cper30d)}</div>
+        ${getBadge('CPER/GLD', cperGldBadge)}
+        <div class="im-explanation">${cperExplain}</div>
+      </div>
     </div>
-    <p style="margin-top:10px">Intermarket analysis monitors bonds (TLT), gold (GLD), and the US dollar (UUP) for confirmation or divergence with equity sector signals. ${a.regime.includes('Broadening') || a.regime.includes('Expansion') ? 'Current readings are supportive for cyclical equity rotation — bond yields stable, gold not signaling flight-to-safety, dollar not surging.' : 'Intermarket signals suggest caution — monitor for safe-haven flows into bonds and gold.'}</p>
+    <div class="im-alignment">
+      <strong>Intermarket Alignment:</strong> <span style="color:${alignmentColor};font-weight:700">${alignment}</span> (${riskOnCount} Risk-On, ${riskOffCount} Risk-Off, ${4 - riskOnCount - riskOffCount} Neutral)
+    </div>
+    <p style="margin-top:10px">Intermarket analysis monitors bonds (TLT), gold (GLD), US dollar (UUP), and copper/gold (CPER) for confirmation or divergence with equity sector signals. ${a.regime.includes('Broadening') || a.regime.includes('Expansion') ? 'Current readings appear supportive for cyclical equity rotation — bond yields stable, gold not signaling acute flight-to-safety, dollar not surging.' : 'Intermarket signals suggest caution — monitor for safe-haven flows into bonds and gold.'}</p>
   `;
 }
 
 function renderFracture(a) {
-  const healthy = a.breadth200 >= 50 && a.entropy === 'Healthy';
+  const breadthHealth = a.breadth200 >= 60 ? 'Healthy' : a.breadth200 >= 40 ? 'Moderate' : 'Crowded';
+  const breadthScore = a.breadth200;
+
+  const entropyHealth = a.entropy;
+  const entropyScore = a.entropy === 'Healthy' ? 75 : a.entropy === 'Moderate' ? 50 : 25;
+
+  const velocityStd = a.velocityStdDev;
+  const velHealth = velocityStd > 0.003 ? 'Diverging' : velocityStd > 0.0015 ? 'Moderate' : 'Converging';
+  const velScore = velocityStd > 0.003 ? 75 : velocityStd > 0.0015 ? 50 : 25;
+
+  const corrDensity = a.correlationDensity;
+  const corrHealth = corrDensity < 30 ? 'Healthy' : corrDensity < 50 ? 'Moderate' : 'Dense';
+  const corrScore = 100 - corrDensity;
+
+  const avgScore = (breadthScore + entropyScore + velScore + corrScore) / 4;
+  let severity = 'CLEAR', severityColor = 'var(--green)';
+  if (avgScore < 40) { severity = 'SEVERE'; severityColor = 'var(--red)'; }
+  else if (avgScore < 60) { severity = 'MODERATE'; severityColor = 'var(--orange)'; }
+  else if (avgScore < 75) { severity = 'MILD'; severityColor = 'var(--orange)'; }
+
+  const hasWarning = severity !== 'CLEAR';
+
+  let breadthExplain = '', entExplain = '', velExplain = '', corrExplain = '';
+  if (breadthScore < 40) breadthExplain = ' ACTION: Reduce risk. Narrowing breadth indicates concentrated leadership.';
+  if (entropyScore < 50) entExplain = ' ACTION: Portfolio concentration risk. Increase diversification across underweights.';
+  if (velScore < 50) velExplain = ' ACTION: Velocity divergence can precede corrections. Consider hedging.';
+  if (corrScore < 40) corrExplain = ' ACTION: High correlation density limits diversification benefits. Rebalance.';
+
   $('#fractureContent').innerHTML = `
-    <div style="background:${healthy ? 'rgba(63,185,80,.1)' : 'rgba(248,81,73,.1)'};border:1px solid ${healthy ? 'var(--green)' : 'var(--red)'};border-radius:8px;padding:14px;margin-bottom:12px">
-      <span style="font-weight:700;color:${healthy ? 'var(--green)' : 'var(--red)'}">${healthy ? 'No Dangerous Fracture Detected' : 'Fracture Warning Active'}</span>
+    <div style="background:${hasWarning ? 'rgba(248,81,73,.1)' : 'rgba(63,185,80,.1)'};border:1px solid ${hasWarning ? 'var(--red)' : 'var(--green)'};border-radius:8px;padding:14px;margin-bottom:12px">
+      <span style="font-weight:700;color:${hasWarning ? 'var(--red)' : 'var(--green)'}">${hasWarning ? 'Fracture Warning Active — ' : 'No Dangerous Fracture Detected — '}Severity: <span style="color:${severityColor}">${severity}</span></span>
     </div>
-    <p>${healthy ? 'Market breadth is healthy and rotation entropy is rising — no signs of dangerous narrowing or sector breakdown. The broadening pattern typically supports sustained rallies.' : 'Market breadth is narrowing and/or entropy is declining — this can precede corrections when leadership becomes too concentrated. Consider reducing risk.'}</p>
-    <p style="margin-top:10px;color:var(--text-secondary)">The fracture radar monitors: breadth collapse (< 40% above 200 DMA), entropy crowding (< 3 sectors leading), and velocity divergence (top sectors decelerating while laggards aren't recovering).</p>
+
+    <div class="fracture-metric">
+      <div class="fracture-label"><span>1. Breadth Health (% Sectors Above 200 DMA)</span><span style="color:${breadthScore >= 60 ? 'var(--green)' : breadthScore >= 40 ? 'var(--orange)' : 'var(--red)'};font-weight:700">${breadthScore.toFixed(0)}%</span></div>
+      <div class="fracture-bar"><div class="fracture-fill" style="width:${Math.min(100, breadthScore)}%;background:${breadthScore >= 60 ? 'var(--green)' : breadthScore >= 40 ? 'var(--orange)' : 'var(--red)'}"></div></div>
+      <div style="font-size:10px;color:var(--text-secondary);margin-top:4px">${breadthHealth} | ${breadthScore >= 60 ? 'Strong broadening' : breadthScore >= 40 ? 'Mixed signals' : 'Narrowing concerns'}${breadthExplain}</div>
+    </div>
+
+    <div class="fracture-metric">
+      <div class="fracture-label"><span>2. Rotation Entropy (Sector Dispersion)</span><span style="color:${entropyScore >= 60 ? 'var(--green)' : entropyScore >= 40 ? 'var(--orange)' : 'var(--red)'};font-weight:700">${entropyHealth}</span></div>
+      <div class="fracture-bar"><div class="fracture-fill" style="width:${entropyScore}%;background:${entropyScore >= 60 ? 'var(--green)' : entropyScore >= 40 ? 'var(--orange)' : 'var(--red)'}"></div></div>
+      <div style="font-size:10px;color:var(--text-secondary);margin-top:4px">${entropyHealth} rotation | ${entropyScore >= 60 ? 'Healthy dispersion' : entropyScore >= 40 ? 'Moderate concentration' : 'Crowding risk'}${entExplain}</div>
+    </div>
+
+    <div class="fracture-metric">
+      <div class="fracture-label"><span>3. Velocity Dispersion (Sector Divergence)</span><span style="color:${velScore >= 60 ? 'var(--green)' : velScore >= 40 ? 'var(--orange)' : 'var(--red)'};font-weight:700">${velHealth}</span></div>
+      <div class="fracture-bar"><div class="fracture-fill" style="width:${velScore}%;background:${velScore >= 60 ? 'var(--green)' : velScore >= 40 ? 'var(--orange)' : 'var(--red)'}"></div></div>
+      <div style="font-size:10px;color:var(--text-secondary);margin-top:4px">Std Dev: ${velocityStd.toFixed(4)} | ${velScore >= 60 ? 'Healthy divergence' : velScore >= 40 ? 'Moderate convergence' : 'Sectors moving together'}${velExplain}</div>
+    </div>
+
+    <div class="fracture-metric">
+      <div class="fracture-label"><span>4. Correlation Density (Strong Edges)</span><span style="color:${corrScore >= 60 ? 'var(--green)' : corrScore >= 40 ? 'var(--orange)' : 'var(--red)'};font-weight:700">${corrHealth}</span></div>
+      <div class="fracture-bar"><div class="fracture-fill" style="width:${corrScore}%;background:${corrScore >= 60 ? 'var(--green)' : corrScore >= 40 ? 'var(--orange)' : 'var(--red)'}"></div></div>
+      <div style="font-size:10px;color:var(--text-secondary);margin-top:4px">${corrDensity.toFixed(1)}% of possible strong edges | ${corrScore >= 60 ? 'Low correlation risk' : corrScore >= 40 ? 'Moderate clustering' : 'High clustering'}${corrExplain}</div>
+    </div>
+
+    <div class="fracture-severity" style="border-left-color:${severityColor}">
+      Overall Fracture Score: ${avgScore.toFixed(0)}/100 | Severity: <span style="color:${severityColor}">${severity}</span>
+    </div>
+
+    <div class="fracture-explanation">
+      ${hasWarning ? `<strong>What This Means:</strong> The fracture radar has detected warning signs. Multiple metrics indicate ${severity === 'SEVERE' ? 'critical' : severity === 'MODERATE' ? 'elevated' : 'emerging'} stress in market structure. This can precede corrections when leadership becomes too concentrated or breadth fails to confirm. Consider tightening stops and reducing exposure to lagging sectors. Monitor for reversal signals in the regime indicator.` : `<strong>What This Means:</strong> Market structure is healthy with broad participation and healthy rotation. Breadth is supporting the rally, and sector momentum is well-dispersed. No immediate fracture risks detected. Continue with conviction-based allocation in top performers.`}
+    </div>
   `;
 }
 
@@ -737,7 +1062,6 @@ function buildRSChart(days) {
     if (!sec) return null;
     const rs = divArrays(sec.closes, spy.closes);
     const rsSma = sma(rs, 21);
-    // Normalize so first value = 100
     const sliced = rsSma.slice(-days);
     const base = sliced.find(v => v !== null) || 1;
     const normalized = sliced.map(v => v !== null ? (v / base) * 100 : null);
@@ -790,7 +1114,6 @@ async function init() {
     const loaderP = $('#loader p');
     loaderP.textContent = `Fetching ${ALL_TICKERS.length} tickers from Polygon.io...`;
 
-    // Fetch ALL tickers in parallel — Polygon has no CORS issues and handles concurrent requests
     const results = await Promise.all(ALL_TICKERS.map(async ticker => {
       try { return { ticker, data: await fetchTicker(ticker) }; }
       catch { return { ticker, data: null }; }
@@ -811,8 +1134,8 @@ async function init() {
     if (!analysis) throw new Error(`Analysis failed — need SPY + at least 3 sectors. Loaded: ${Object.keys(allData).join(', ')}`);
 
     renderMetrics(analysis);
+    renderHeatmap(analysis);
     renderConvictionTable(analysis);
-    drawNetwork(analysis.correlations);
     buildRSChart(126);
     renderBacktest(analysis);
     renderRegime(analysis);
@@ -821,7 +1144,6 @@ async function init() {
     renderAllocation(analysis);
     setupTabs();
 
-    // RS chart timeframe buttons
     $$('#rsTfBtns .tf-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         $$('#rsTfBtns .tf-btn').forEach(b => b.classList.remove('active'));
@@ -830,7 +1152,6 @@ async function init() {
       });
     });
 
-    // Reveal
     $('#loader').classList.add('hidden');
     $('#app').style.opacity = '1';
     $('#app').style.transition = 'opacity .4s';
