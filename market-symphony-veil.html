@@ -180,7 +180,17 @@ const SECTOR_COLORS = {XLK:'#58a6ff',XLF:'#bc8cff',XLE:'#f7931a',XLV:'#3fb950',X
 let allData = {}; // ticker -> {dates, closes}
 let rsChart = null;
 
-const POLYGON_KEY = '';
+const POLYGON_KEY = (() => {
+  // No key is stored in this page. Each viewer supplies their own Polygon (Massive) key,
+  // asked for once and kept only in their browser.
+  const slot = 'polygon_api_key';
+  const ask = () => (window.prompt('Enter your Polygon (Massive) API key. It stays in this browser only.') || '').trim();
+  try {
+    let k = localStorage.getItem(slot);
+    if (!k) { k = ask(); if (k) localStorage.setItem(slot, k); }
+    return k || '';
+  } catch (e) { return ask(); }
+})();
 
 async function fetchTicker(ticker) {
   // Polygon.io — 2 years of daily bars
